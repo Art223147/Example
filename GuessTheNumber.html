@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game 1 - Guess The Number (HTML + CSS + JS)</title>
+<style>
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1e222a;
+    font-family: Consolas, "Courier New", monospace;
+  }
+
+  .console {
+    width: 760px; max-width: 95%;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    overflow: hidden;
+  }
+
+  .console-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; background: #161b22;
+  }
+
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .red { background: #ff5f56; } .yellow { background: #ffbd2e; } .green { background: #27c93f; }
+  .title { margin-left: 8px; font-size: 13px; color: #8b949e; }
+
+  .console-body {
+    height: 430px; overflow-y: auto; padding: 16px;
+    font-size: 15px; line-height: 1.55; color: #3fb950;
+  }
+
+  .line  { white-space: pre-wrap; }
+  .echo  { color: #e6edf3; }
+  .info  { color: #58a6ff; }
+  .warn  { color: #d29922; }
+  .error { color: #f85149; }
+  .win   { color: #3fb950; font-weight: bold; }
+
+  .console-input {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 16px; border-top: 1px solid #30363d;
+  }
+  .prompt { color: #3fb950; font-weight: bold; }
+  #input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: #e6edf3; font: inherit;
+  }
+</style>
+</head>
+<body>
+
+ 
+  <div class="console">
+    <div class="console-header">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+      <span class="title">guess_the_number.html — console</span>
+    </div>
+
+    <div id="output" class="console-body"></div>
+
+    <form id="inputForm" class="console-input">
+      <span class="prompt">&gt;</span>
+      <input id="input" type="text" autocomplete="off" autofocus>
+    </form>
+  </div>
+
+<script>
+
+    const output = document.getElementById("output");
+const form   = document.getElementById("inputForm");
+const input  = document.getElementById("input");
+
+
+function print(text, cls) {
+  const line = document.createElement("div");          
+  line.className = "line" + (cls ? " " + cls : "");
+  line.textContent = text;
+  output.appendChild(line);
+  output.scrollTop = output.scrollHeight;              
+}
+
+
+const difficulties = [
+  { key: "1", label: "Easy",   range: 50,  maxAttempts: 8 },
+  { key: "2", label: "Normal", range: 100, maxAttempts: 7 },
+  { key: "3", label: "Hard",   range: 200, maxAttempts: 6 }
+];
+
+let state = "menu";            
+let secret = 0, range = 0, attempts = 0, maxAttempts = 0;
+
+function showMenu() {
+  print("====================================", "info");
+  print("  GUESS THE NUMBER | JavaScript Game ", "info");
+  print("====================================", "info");
+  print("Select difficulty:");
+  for (const d of difficulties)                       
+    print(`  [${d.key}] ${d.label} -> number 1-${d.range}, ${d.maxAttempts} attempts`);
+  print("Enter choice (1-3):", "warn");
+}
+
+function startRound(diff) {
+  range = diff.range;
+  maxAttempts = diff.maxAttempts;
+  secret = Math.floor(Math.random() * range) + 1;      
+  attempts = 0;
+  state = "guess";
+  print("");
+  print(`I'm thinking of a number between 1 and ${range} (${diff.label} mode).`);
+  print(`You have ${maxAttempts} attempts. Good luck!`);
+  print("");
+  print(`Attempt ${attempts + 1}/${maxAttempts} -> Your guess:`, "warn");
+}
+
+function handleGuess(value) {
+  const guess = parseInt(value, 10);                  
+
+  if (isNaN(guess) || guess < 1 || guess > range) {    
+    print("Invalid input! Enter a number within the range.", "error");
+    return;
+  }
+
+  attempts++;                                         
+
+  if (guess === secret) {                              
+    print(`CORRECT! The number was ${secret}. You won in ${attempts} attempt(s)!`, "win");
+    endRound();
+  } else if (attempts >= maxAttempts) {
+    print(`GAME OVER! You used all ${maxAttempts} attempts.`, "error");
+    print(`The secret number was ${secret}.`, "error");
+    endRound();
+  } else if (guess < secret) {
+    print("Too LOW! Aim higher.");
+    print(`Attempt ${attempts + 1}/${maxAttempts} -> Your guess:`, "warn");
+  } else {
+    print("Too HIGH! Aim lower.");
+    print(`Attempt ${attempts + 1}/${maxAttempts} -> Your guess:`, "warn");
+  }
+}
+
+function endRound() {
+  state = "again";
+  print("Play again? (y/n):", "warn");
+}
+
+
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const value = input.value.trim();
+  if (value === "") return;
+  print("> " + value, "echo");                         
+  input.value = "";
+
+  if (state === "menu") {
+    const diff = difficulties.find(d => d.key === value);   
+    if (diff) startRound(diff);
+    else print("Invalid choice! Please enter 1, 2, or 3.", "error");
+  }
+  else if (state === "guess") handleGuess(value);
+  else if (state === "again") {
+    const v = value.toLowerCase();
+    if (v === "y" || v === "yes") { state = "menu"; print(""); showMenu(); }
+    else if (v === "n" || v === "no") { print("Thanks for playing! Goodbye!", "info"); input.disabled = true; }
+    else print("Please answer y or n.", "error");
+  }
+});
+
+document.addEventListener("click", () => input.focus());
+showMenu();
+</script>
+</body>
+</html>
